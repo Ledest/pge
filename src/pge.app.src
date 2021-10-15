@@ -1,0 +1,4 @@
+{application, pge, [{description, "PG extended"},
+                    {vsn, "0.0.1"},
+                    {registered, []},
+                    {applications, [stdlib, kernel]}]}.
