@@ -1,17 +1,13 @@
-.eunit
-*.o
-*.beam
+/.eunit
 *.plt
 erl_crash.dump
-.concrete/DEV_MODE
 
 # rebar 2.x
-.rebar
-rel/example_project
-ebin/*.beam
-deps
+/.rebar
+/ebin
+/deps
 
 # rebar 3
-.rebar3
-_build/
-_checkouts/
+/.rebar3
+/_build
+/_checkouts
