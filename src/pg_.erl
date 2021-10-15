@@ -4,8 +4,50 @@
          register_name/2,
          unregister_name/1,
          whereis_name/1]).
--export([join/1, join/2,
-         leave/1, leave/2]).
+-export([start/1,
+         start_link/0, start_link/1,
+         join/1, join/2, join/3,
+         leave/1, leave/2, leave/3,
+         get_members/1, get_members/2,
+         get_local_members/1, get_local_members/2,
+         which_groups/0, which_groups/1,
+         which_local_groups/0, which_local_groups/1]).
+
+start(Scope) -> pg:start(Scope).
+
+start_link() -> pg:start_link().
+
+start_link(Scope) -> pg:start_link(Scope).
+
+join(Name) -> pg:join(Name, self()).
+
+join(Name, P) when is_pid(P); is_list(P) -> pg:join(Name, P);
+join(Scope, Name) when is_atom(Scope) -> pg:join(Scope, Name, self()).
+
+join(Scope, Name, P) -> pg:join(Scope, Name, P).
+
+leave(Name) -> pg:leave(Name, self()).
+
+leave(Name, P) when is_pid(P); is_list(P) -> pg:leave(Name, P);
+leave(Scope, Name) when is_atom(Scope) -> pg:leave(Scope, Name, self()).
+
+leave(Scope, Name, P) -> pg:leave(Scope, Name, P).
+
+get_members(Name) -> pg:get_members(Name).
+
+get_members(Scope, Name) -> pg:get_members(Scope, Name).
+
+get_local_members(Name) -> pg:get_local_members(Name).
+
+get_local_members(Scope, Name) -> pg:get_local_members(Scope, Name).
+
+which_groups() -> pg:which_groups().
+
+which_groups(Scope) -> pg:which_groups(Scope).
+
+which_local_groups() -> pg:which_local_groups().
+
+which_local_groups(Scope) -> pg:which_local_groups(Scope).
 
 send(P, M) when is_pid(P); is_atom(P) -> P ! M;
 send(Name, M) ->
@@ -17,29 +59,19 @@ send(Name, M) ->
         undefined -> error(badarg)
     end.
 
-register_name({Scope, Name}, Pid) when is_atom(Scope) ->
-    ok = pg:join(Scope, Name, Pid),
+register_name({Scope, Name}, P) when is_atom(Scope) ->
+    ok = pg:join(Scope, Name, P),
     yes;
-register_name(Name, Pid) ->
-    ok = pg:join(Name, Pid),
+register_name(Name, P) ->
+    ok = pg:join(Name, P),
     yes.
 
 unregister_name({Scope, Name}) when is_atom(Scope) -> leave(Scope, Name);
 unregister_name(Name) -> leave(Name).
 
-join(Name) -> pg:join(Name, self()).
-
-join(Name, Pid) when is_pid(Pid) -> pg:join(Name, Pid);
-join(Scope, Name) when is_atom(Scope) -> pg:join(Scope, Name, self()).
-
-leave(Name) -> pg:leave(Name, self()).
-
-leave(Name, Pid) when is_pid(Pid) -> pg:leave(Name, Pid);
-leave(Scope, Name) when is_atom(Scope) -> pg:leave(Scope, Name, self()).
-
 whereis_name({global, Scope, Name, newest}) when is_atom(Scope) ->
     case pg:get_members(Scope, Name) of
-        [Pid|_] -> Pid;
+        [P|_] -> P;
         [] -> undefined
     end;
 whereis_name({global, Scope, Name, oldest}) when is_atom(Scope) ->
@@ -54,7 +86,7 @@ whereis_name({global, Scope, Name, random}) when is_atom(Scope) ->
     end;
 whereis_name({local, Scope, Name, newest}) when is_atom(Scope) ->
     case pg:get_local_members(Scope, Name) of
-        [Pid|_] -> Pid;
+        [P|_] -> P;
         [] -> undefined
     end;
 whereis_name({local, Scope, Name, oldest}) when is_atom(Scope) ->
