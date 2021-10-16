@@ -75,7 +75,7 @@ send(Name, M) ->
         L when is_list(L) ->
             lists:foreach(fun(P) -> P ! M end, L),
             M;
-        undefined -> error(badarg)
+        undefined -> error(badarg, [Name, M])
     end.
 
 -spec register_name({atom(), pg:group()} | pg:group(), P::pid()) -> yes.
