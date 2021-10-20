@@ -106,7 +106,7 @@ whereis_name({global, Scope, Name, oldest}) when is_atom(Scope) ->
 whereis_name({global, Scope, Name, random}) when is_atom(Scope) ->
     case pg:get_members(Scope, Name) of
         [] -> undefined;
-        L -> lists:nth(rand:uniform(length(L)), L)
+        L -> randth(L)
     end;
 whereis_name({local, Scope, Name, newest}) when is_atom(Scope) ->
     case pg:get_local_members(Scope, Name) of
@@ -121,7 +121,7 @@ whereis_name({local, Scope, Name, oldest}) when is_atom(Scope) ->
 whereis_name({local, Scope, Name, random}) when is_atom(Scope) ->
     case pg:get_local_members(Scope, Name) of
         [] -> undefined;
-        L -> lists:nth(rand:uniform(length(L)), L)
+        L -> randth(L)
     end;
 whereis_name({global, Scope, Name}) when is_atom(Scope) -> pg:get_members(Scope, Name);
 whereis_name({local, Scope, Name}) when is_atom(Scope) -> pg:get_local_members(Scope, Name);
@@ -129,3 +129,5 @@ whereis_name({global, Name}) -> pg:get_members(Name);
 whereis_name({local, Name}) -> pg:get_local_members(Name);
 whereis_name({Scope, Name}) when is_atom(Scope) -> pg:get_members(Scope, Name);
 whereis_name(Name) -> pg:get_members(Name).
+
+randth(L) -> lists:nth(rand:uniform(length(L)), L).
