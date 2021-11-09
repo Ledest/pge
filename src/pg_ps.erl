@@ -47,4 +47,7 @@ unsubscribe(Scope, Event, Pid) -> pg:leave(Scope, {?ETag, Event}, Pid).
 publish(Event, Msg) -> publish(?DEFAULT_SCOPE, Event, Msg).
 
 -spec publish(Scope::atom(), Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
-publish(Scope, Event, Msg) -> pg_:send({Scope, {?ETag, Event}}, {?ETag, Event, Msg}).
+publish(Scope, Event, Msg) ->
+    M = {?ETag, Event, Msg},
+    lists:foreach(fun(P) -> P ! M end, pg:get_members(Scope, {?ETag, Event})),
+    M.
