@@ -68,6 +68,7 @@ which_local_groups() -> pg:which_local_groups().
 -spec which_local_groups(Scope::atom()) -> [pg:group()].
 which_local_groups(Scope) -> pg:which_local_groups(Scope).
 
+-spec send(P::pid()|atom()|term(), M) -> M when M::any().
 send(P, M) when is_pid(P); is_atom(P) -> P ! M;
 send(Name, M) ->
     case whereis_name(Name) of
