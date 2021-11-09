@@ -1,4 +1,4 @@
--module(pg_).
+-module(pge).
 
 -export([send/2,
          msend/2,
