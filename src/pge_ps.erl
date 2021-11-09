@@ -7,7 +7,8 @@
          unsubscribe/1, unsubscribe/2, unsubscribe/3,
          unsubscribe_cond/2, unsubscribe_cond/3, unsubscribe_cond/4,
          publish/2, publish/3,
-         publish_cond/2, publish_cond/3]).
+         publish_cond/2, publish_cond/3,
+         mpublish/2, mpublish/3]).
 
 -define(DEFAULT_SCOPE, ?MODULE).
 -define(ETag, pge_ps_event).
@@ -99,6 +100,16 @@ publish_cond(Scope, Event, Msg) ->
                   end,
                   select(Scope, [{{?ETag, Event, '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]])),
     M.
+
+-spec mpublish(Event::any(), Msgs::list()) -> ok.
+mpublish(Event, Msgs) -> mpublish(?DEFAULT_SCOPE, Event, Msgs).
+
+-spec mpublish(Scope::atom(), Event::any, Msgs::list()) -> ok.
+mpublish(Scope, Event, Msgs) ->
+    Ms = [{?ETag, Event, M} || M <- Msgs],
+    pg_:msend({Scope, {?ETag, Event, undefined}}, Ms),
+    lists:foreach(fun({?ETag, E, _} = N) -> E =/= undefined andalso E =:= Event andalso pg_:msend({Scope, N}, Ms) end,
+                  pg:which_groups(Scope)).
 
 cond_spec(Cond) when is_list(Cond) ->
     Spec = lists:map(fun({_, G, [_]} = S) when is_list(G) -> S;
