@@ -1,6 +1,7 @@
 -module(pg_).
 
 -export([send/2,
+         msend/2,
          register_name/2,
          unregister_name/1,
          whereis_name/1]).
@@ -77,6 +78,15 @@ send(Name, M) ->
             lists:foreach(fun(P) -> P ! M end, L),
             M;
         undefined -> error(badarg, [Name, M])
+    end.
+
+-spec msend(P::pid()|atom()|term(), Ms::list()) -> ok.
+msend(P, Ms) when is_pid(P); is_atom(P) -> lists:foreach(fun(M) -> P ! M end, Ms);
+msend(Name, Ms) ->
+    case whereis_name(Name) of
+        P when is_pid(P) -> lists:foreach(fun(M) -> P ! M end, Ms);
+        L when is_list(L) -> lists:foreach(fun(P) -> lists:foreach(fun(M) -> P ! M end, Ms) end, L);
+        undefined -> error(badarg, [Name, Ms])
     end.
 
 -spec register_name({atom(), pg:group()} | pg:group(), P::pid()) -> yes.
