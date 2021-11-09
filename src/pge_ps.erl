@@ -89,18 +89,15 @@ publish_cond(Event, Msg) -> publish_cond(?DEFAULT_SCOPE, Event, Msg).
 -spec publish_cond(Scope::atom(), Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
 publish_cond(Scope, Event, Msg) ->
     M = {?ETag, Event, Msg},
-    lists:foreach(fun({?ETag, E, S} = N) ->
-                      E =:= Event andalso
+    lists:foreach(fun({S, L}) ->
                       (S =:= undefined orelse
                        try
                            ets:match_spec_run([Msg], ets:match_spec_compile(S)) =:= [true]
                        catch
                            error:_ -> false
-                       end) andalso
-                      pg_:send({Scope, N}, M);
-                     (_) -> ok
+                       end) andalso lists:foreach(fun(P) -> P ! M end, L)
                   end,
-                  pg:which_groups(Scope)),
+                  select(Scope, [{{?ETag, Event, '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]])),
     M.
 
 cond_spec(Cond) when is_list(Cond) ->
@@ -113,3 +110,5 @@ cond_spec(Cond) when is_list(Cond) ->
     Spec;
 cond_spec(Cond) when is_tuple(Cond) -> cond_spec([Cond]);
 cond_spec(Cond) -> error(badarg, [Cond]).
+
+select(Scope, Spec) -> ets:select(Scope, Spec).
