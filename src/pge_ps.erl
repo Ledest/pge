@@ -98,7 +98,7 @@ publish_cond(Scope, Event, Msg) ->
                            error:_ -> false
                        end) andalso lists:foreach(fun(P) -> P ! M end, L)
                   end,
-                  select(Scope, [{{?ETag, Event, '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]])),
+                  select(Scope, [{{{?ETag, Event, '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]}])),
     M.
 
 -spec mpublish(Event::any(), Msgs::list()) -> ok.
