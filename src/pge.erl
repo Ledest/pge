@@ -81,11 +81,11 @@ send(Name, M) ->
     end.
 
 -spec msend(P::pid()|atom()|term(), Ms::list()) -> ok.
-msend(P, Ms) when is_pid(P); is_atom(P) -> lists:foreach(fun(M) -> P ! M end, Ms);
+msend(P, Ms) when is_pid(P); is_atom(P) -> msend_(P, Ms);
 msend(Name, Ms) ->
     case whereis_name(Name) of
-        P when is_pid(P) -> lists:foreach(fun(M) -> P ! M end, Ms);
-        L when is_list(L) -> lists:foreach(fun(P) -> lists:foreach(fun(M) -> P ! M end, Ms) end, L);
+        P when is_pid(P) -> msend_(P, Ms);
+        L when is_list(L) -> lists:foreach(fun(P) -> msend_(P, Ms) end, L);
         undefined -> error(badarg, [Name, Ms])
     end.
 
@@ -140,5 +140,7 @@ whereis_name({global, Name}) -> pg:get_members(Name);
 whereis_name({local, Name}) -> pg:get_local_members(Name);
 whereis_name({Scope, Name}) when is_atom(Scope) -> pg:get_members(Scope, Name);
 whereis_name(Name) -> pg:get_members(Name).
+
+msend_(P, Ms) -> lists:foreach(fun(M) -> P ! M end, Ms).
 
 randth(L) -> lists:nth(rand:uniform(length(L)), L).
