@@ -79,9 +79,7 @@ publish(Event, Msg) -> publish(?DEFAULT_SCOPE, Event, Msg).
 -spec publish(Scope::atom(), Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
 publish(Scope, Event, Msg) ->
     M = {?ETag, Event, Msg},
-    pge:send({Scope, {?ETag, Event, undefined}}, M),
-    lists:foreach(fun({?ETag, E, _} = N) -> E =/= undefined andalso E =:= Event andalso pge:send({Scope, N}, M) end,
-                  pg:which_groups(Scope)),
+    publish(Scope, Event, fun pge:send/2, M),
     M.
 
 -spec publish_cond(Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
@@ -105,10 +103,11 @@ publish_cond(Scope, Event, Msg) ->
 mpublish(Event, Msgs) -> mpublish(?DEFAULT_SCOPE, Event, Msgs).
 
 -spec mpublish(Scope::atom(), Event::any, Msgs::list()) -> ok.
-mpublish(Scope, Event, Msgs) ->
-    Ms = [{?ETag, Event, M} || M <- Msgs],
-    pge:msend({Scope, {?ETag, Event, undefined}}, Ms),
-    lists:foreach(fun({?ETag, E, _} = N) -> E =/= undefined andalso E =:= Event andalso pge:msend({Scope, N}, Ms) end,
+mpublish(Scope, Event, Msgs) -> publish(Scope, Event, fun pge:msend/2, [{?ETag, Event, M} || M <- Msgs]).
+
+publish(Scope, Event, Send, M) ->
+    Send({Scope, {?ETag, Event, undefined}}, M),
+    lists:foreach(fun({?ETag, E, _} = N) -> E =/= undefined andalso E =:= Event andalso Send({Scope, N}, M) end,
                   pg:which_groups(Scope)).
 
 cond_spec(Cond) when is_list(Cond) ->
