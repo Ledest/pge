@@ -114,11 +114,13 @@ mpublish(Event, Msgs) -> mpublish(?DEFAULT_SCOPE, Event, Msgs).
 -spec mpublish(Scope::atom(), Event::any, Msgs::list()) -> ok.
 mpublish(Scope, Event, Msgs) -> publish(Scope, Event, fun pge:msend/2, [{?ETag, Event, M} || M <- Msgs]).
 
+-spec publish(Scope::atom(), Event::any(), Send::fun(({atom(), any()}, any()) -> any()), M::any()) -> ok.
 publish(Scope, Event, Send, M) ->
     Send({Scope, {?ETag, Event, undefined}}, M),
     lists:foreach(fun({?ETag, E, _} = N) -> E =/= undefined andalso E =:= Event andalso Send({Scope, N}, M) end,
                   pg:which_groups(Scope)).
 
+-spec cond_spec(Cond::[cond_clause()]|cond_clause()) -> ets:match_spec().
 cond_spec(Cond) when is_list(Cond) ->
     Spec = lists:map(fun({_, G, [_]} = S) when is_list(G) -> S;
                         ({M, G}) when is_list(G) -> {M, G, [true]};
@@ -129,6 +131,8 @@ cond_spec(Cond) when is_list(Cond) ->
     Spec;
 cond_spec(Cond) -> cond_spec([Cond]).
 
+-spec select(Scope::atom(), Event::any()) -> [{any(), [pid()]}].
 select(Scope, Event) -> ets:select(Scope, [{{{?ETag, Event, '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]}]).
 
+-spec pub(M::{?ETag, any(), any()}, Ps::[pid()]) -> ok.
 pub(M, Ps) -> lists:foreach(fun(P) -> P ! M end, Ps).
