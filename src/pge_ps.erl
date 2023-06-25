@@ -105,7 +105,7 @@ publish_cond(Scope, Event, Msg) ->
                           error:_ -> false
                       end
                   end,
-                  select(Scope, [{{{?ETag, Event, '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]}])),
+                  select(Scope, Event)),
     M.
 
 -spec mpublish(Event::any(), Msgs::list()) -> ok.
@@ -130,6 +130,6 @@ cond_spec(Cond) when is_list(Cond) ->
 cond_spec(Cond) when is_tuple(Cond) -> cond_spec([Cond]);
 cond_spec(Cond) -> error(badarg, [Cond]).
 
-select(Scope, Spec) -> ets:select(Scope, Spec).
+select(Scope, Event) -> ets:select(Scope, [{{{?ETag, Event, '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]}]).
 
 pub(M, Ps) -> lists:foreach(fun(P) -> P ! M end, Ps).
