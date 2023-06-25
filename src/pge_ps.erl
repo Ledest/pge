@@ -14,6 +14,12 @@
 -define(DEFAULT_SCOPE, ?MODULE).
 -define(ETag, pge_ps_event).
 
+-type cond_clause() :: {ets:match_pattern(), [term()], [term()]} |
+                       {ets:match_pattern(), [term()]} |
+                       {ets:match_pattern()}.
+
+-export_type([cond_clause/0]).
+
 -spec start() -> {ok, pid()} | {error, any()}.
 start() -> start(?DEFAULT_SCOPE).
 
@@ -39,8 +45,6 @@ subscribe(Scope, Event) -> subscribe(Scope, Event, self()).
 
 -spec subscribe(Scope::atom(), Event::any(), Pid::pid()) -> ok.
 subscribe(Scope, Event, Pid) -> pg:join(Scope, {?ETag, Event, undefined}, Pid).
-
--type cond_clause() :: {term(), [tuple()], [true]} | {term(), [tuple()]} | {term()}.
 
 -spec subscribe_cond(Event::any(), Cond::[cond_clause()]|cond_clause()|undefined) -> ok.
 subscribe_cond(Event, Cond) -> subscribe_cond(?DEFAULT_SCOPE, Event, Cond, self()).
