@@ -3,6 +3,7 @@
 -export([start/0, start/1,
          start_link/0, start_link/1,
          etag/0,
+         message/2,
          subscribe/1, subscribe/2, subscribe/3,
          subscribe_cond/2, subscribe_cond/3, subscribe_cond/4,
          unsubscribe/1, unsubscribe/2, unsubscribe/3,
@@ -14,11 +15,16 @@
 -define(DEFAULT_SCOPE, ?MODULE).
 -define(ETag, pge_ps_event).
 
+-type etag() :: ?ETag.
+-type message(Event, Msg) :: {etag(), Event, Msg}.
+-type message() :: message(term(), term()).
 -type cond_clause() :: {ets:match_pattern(), [term()], [term()]} |
                        {ets:match_pattern(), [term()]} |
                        {ets:match_pattern()}.
 
 -export_type([cond_clause/0]).
+
+-record(?ETag, {event :: any(), condition :: [cond_clause()]|cond_clause()|undefined}).
 
 -spec start() -> {ok, pid()} | {error, any()}.
 start() -> start(?DEFAULT_SCOPE).
@@ -32,7 +38,7 @@ start_link() -> start_link(?DEFAULT_SCOPE).
 -spec start_link(Scope::atom()) -> {ok, pid()} | {error, any()}.
 start_link(Scope) -> pg:start_link(Scope).
 
--spec etag() -> ?ETag.
+-spec etag() -> etag().
 etag() -> ?ETag.
 
 -spec subscribe(Event::any()) -> ok.
@@ -44,7 +50,7 @@ subscribe(Event, Pid) when is_pid(Pid) -> subscribe(?DEFAULT_SCOPE, Event, Pid);
 subscribe(Scope, Event) -> subscribe(Scope, Event, self()).
 
 -spec subscribe(Scope::atom(), Event::any(), Pid::pid()) -> ok.
-subscribe(Scope, Event, Pid) -> pg:join(Scope, {?ETag, Event, undefined}, Pid).
+subscribe(Scope, Event, Pid) -> pg:join(Scope, #?ETag{event = Event}, Pid).
 
 -spec subscribe_cond(Event::any(), Cond::[cond_clause()]|cond_clause()|undefined) -> ok.
 subscribe_cond(Event, Cond) -> subscribe_cond(?DEFAULT_SCOPE, Event, Cond, self()).
@@ -56,7 +62,7 @@ subscribe_cond(Scope, Event, Cond) -> subscribe_cond(Scope, Event, Cond, self())
 
 -spec subscribe_cond(Scope::atom(), Event::any(), Cond::[cond_clause()]|cond_clause()|undefined, Pid::pid()) -> ok.
 subscribe_cond(Scope, Event, undefined, Pid) -> subscribe(Scope, Event, Pid);
-subscribe_cond(Scope, Event, Cond, Pid) -> pg:join(Scope, {?ETag, Event, cond_spec(Cond)}, Pid).
+subscribe_cond(Scope, Event, Cond, Pid) -> pg:join(Scope, #?ETag{event = Event, condition = cond_spec(Cond)}, Pid).
 
 -spec unsubscribe(Event::any()) -> ok.
 unsubscribe(Event) -> unsubscribe(?DEFAULT_SCOPE, Event, self()).
@@ -67,7 +73,7 @@ unsubscribe(Event, Pid) when is_pid(Pid) -> unsubscribe(?DEFAULT_SCOPE, Event, P
 unsubscribe(Scope, Event) -> unsubscribe(Scope, Event, self()).
 
 -spec unsubscribe(Scope::atom(), Event::any(), Pid::pid()) -> ok.
-unsubscribe(Scope, Event, Pid) -> pg:leave(Scope, {?ETag, Event, undefined}, Pid).
+unsubscribe(Scope, Event, Pid) -> pg:leave(Scope, #?ETag{event = Event}, Pid).
 
 -spec unsubscribe_cond(Event::any(), Cond::[cond_clause()]|cond_clause()|undefined) -> ok.
 unsubscribe_cond(Event, Cond) -> unsubscribe_cond(?DEFAULT_SCOPE, Event, Cond, self()).
@@ -79,23 +85,23 @@ unsubscribe_cond(Scope, Event, Cond) -> unsubscribe_cond(Scope, Event, Cond, sel
 
 -spec unsubscribe_cond(Scope::atom(), Event::any(), Cond::[cond_clause()]|cond_clause()|undefined, Pid::pid()) -> ok.
 unsubscribe_cond(Scope, Event, undefined, Pid) -> unsubscribe(Scope, Event, Pid);
-unsubscribe_cond(Scope, Event, Cond, Pid) -> pg:leave(Scope, {?ETag, Event, cond_spec(Cond)}, Pid).
+unsubscribe_cond(Scope, Event, Cond, Pid) -> pg:leave(Scope, #?ETag{event = Event, condition = cond_spec(Cond)}, Pid).
 
--spec publish(Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
+-spec publish(Event, Msg) -> message(Event, Msg) when Event::any(), Msg::any().
 publish(Event, Msg) -> publish(?DEFAULT_SCOPE, Event, Msg).
 
--spec publish(Scope::atom(), Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
+-spec publish(Scope::atom(), Event, Msg) -> message(Event, Msg) when Event::any(), Msg::any().
 publish(Scope, Event, Msg) ->
-    M = {?ETag, Event, Msg},
+    M = message(Event, Msg),
     publish(Scope, Event, fun pge:send/2, M),
     M.
 
--spec publish_cond(Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
+-spec publish_cond(Event, Msg) -> message(Event, Msg) when Event::any(), Msg::any().
 publish_cond(Event, Msg) -> publish_cond(?DEFAULT_SCOPE, Event, Msg).
 
--spec publish_cond(Scope::atom(), Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
+-spec publish_cond(Scope::atom(), Event, Msg) -> message(Event, Msg) when Event::any(), Msg::any().
 publish_cond(Scope, Event, Msg) ->
-    M = {?ETag, Event, Msg},
+    M = message(Event, Msg),
     ML = [Msg],
     lists:foreach(fun({undefined, L}) -> pub(M, L);
                      ({S, L}) ->
@@ -112,12 +118,12 @@ publish_cond(Scope, Event, Msg) ->
 mpublish(Event, Msgs) -> mpublish(?DEFAULT_SCOPE, Event, Msgs).
 
 -spec mpublish(Scope::atom(), Event::any, Msgs::list()) -> ok.
-mpublish(Scope, Event, Msgs) -> publish(Scope, Event, fun pge:msend/2, [{?ETag, Event, M} || M <- Msgs]).
+mpublish(Scope, Event, Msgs) -> publish(Scope, Event, fun pge:msend/2, [message(Event, M) || M <- Msgs]).
 
 -spec publish(Scope::atom(), Event::any(), Send::fun(({atom(), any()}, any()) -> any()), M::any()) -> ok.
 publish(Scope, Event, Send, M) ->
-    Send({Scope, {?ETag, Event, undefined}}, M),
-    lists:foreach(fun({?ETag, E, _} = N) -> E =/= undefined andalso E =:= Event andalso Send({Scope, N}, M) end,
+    Send({Scope, #?ETag{event = Event}}, M),
+    lists:foreach(fun(#?ETag{event = E} = N) -> E =/= undefined andalso E =:= Event andalso Send({Scope, N}, M) end,
                   pg:which_groups(Scope)).
 
 -spec cond_spec(Cond::[cond_clause()]|cond_clause()) -> ets:match_spec().
@@ -132,7 +138,11 @@ cond_spec(Cond) when is_list(Cond) ->
 cond_spec(Cond) -> cond_spec([Cond]).
 
 -spec select(Scope::atom(), Event::any()) -> [{any(), [pid()]}].
-select(Scope, Event) -> ets:select(Scope, [{{{?ETag, Event, '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]}]).
+select(Scope, Event) ->
+    ets:select(Scope, [{{#?ETag{event = Event, condition = '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]}]).
 
--spec pub(M::{?ETag, any(), any()}, Ps::[pid()]) -> ok.
+-spec pub(M::message(), Ps::[pid()]) -> ok.
 pub(M, Ps) -> lists:foreach(fun(P) -> P ! M end, Ps).
+
+-spec message(Event, Msg) -> message(Event, Msg) when Event::any(), Msg::any().
+message(Event, Msg) -> {etag(), Event, Msg}.
