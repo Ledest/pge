@@ -141,6 +141,8 @@ whereis_name({local, Name}) -> pg:get_local_members(Name);
 whereis_name({Scope, Name}) when is_atom(Scope) -> pg:get_members(Scope, Name);
 whereis_name(Name) -> pg:get_members(Name).
 
+-spec msend_(P::pid()|atom(), Ms::[term()]) -> ok.
 msend_(P, Ms) -> lists:foreach(fun(M) -> P ! M end, Ms).
 
+-spec randth(L::nonempty_list(pid())) -> pid().
 randth(L) -> lists:nth(rand:uniform(length(L)), L).
