@@ -2,6 +2,7 @@
 
 -export([start/0, start/1,
          start_link/0, start_link/1,
+         etag/0,
          subscribe/1, subscribe/2, subscribe/3,
          subscribe_cond/2, subscribe_cond/3, subscribe_cond/4,
          unsubscribe/1, unsubscribe/2, unsubscribe/3,
@@ -24,6 +25,9 @@ start_link() -> start_link(?DEFAULT_SCOPE).
 
 -spec start_link(Scope::atom()) -> {ok, pid()} | {error, any()}.
 start_link(Scope) -> pg:start_link(Scope).
+
+-spec etag() -> ?ETag.
+etag() -> ?ETag.
 
 -spec subscribe(Event::any()) -> ok.
 subscribe(Event) -> subscribe(?DEFAULT_SCOPE, Event, self()).
