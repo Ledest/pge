@@ -123,12 +123,11 @@ cond_spec(Cond) when is_list(Cond) ->
     Spec = lists:map(fun({_, G, [_]} = S) when is_list(G) -> S;
                         ({M, G}) when is_list(G) -> {M, G, [true]};
                         ({M}) -> {M, [], [true]};
-                        (_) -> error(badarg, [Cond])
+                        (C) -> error(badarg, [C])
                      end, Cond),
     ets:match_spec_compile(Spec),
     Spec;
-cond_spec(Cond) when is_tuple(Cond) -> cond_spec([Cond]);
-cond_spec(Cond) -> error(badarg, [Cond]).
+cond_spec(Cond) -> cond_spec([Cond]).
 
 select(Scope, Event) -> ets:select(Scope, [{{{?ETag, Event, '$1'}, '$2', '_'}, [], [{{'$1', '$2'}}]}]).
 
