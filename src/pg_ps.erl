@@ -3,12 +3,16 @@
 -export([start/0, start/1,
          start_link/0, start_link/1,
          etag/0,
+         message/2,
          subscribe/1, subscribe/2, subscribe/3,
          unsubscribe/1, unsubscribe/2, unsubscribe/3,
          publish/2, publish/3]).
 
 -define(DEFAULT_SCOPE, ?MODULE).
 -define(ETag, pg_ps_event).
+
+-type etag() :: ?ETag.
+-type message(Event, Msg) :: {etag(), Event, Msg}.
 
 -spec start() -> {ok, pid()} | {error, any()}.
 start() -> start(?DEFAULT_SCOPE).
@@ -22,7 +26,7 @@ start_link() -> start_link(?DEFAULT_SCOPE).
 -spec start_link(Scope::atom()) -> {ok, pid()} | {error, any()}.
 start_link(Scope) -> pg:start_link(Scope).
 
--spec etag() -> ?ETag.
+-spec etag() -> etag().
 etag() -> ?ETag.
 
 -spec subscribe(Event::any()) -> ok.
@@ -47,11 +51,14 @@ unsubscribe(Scope, Event) -> unsubscribe(Scope, Event, self()).
 -spec unsubscribe(Scope::atom(), Event::any(), Pid::pid()) -> ok.
 unsubscribe(Scope, Event, Pid) -> pg:leave(Scope, {?ETag, Event}, Pid).
 
--spec publish(Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
+-spec publish(Event, Msg) -> message(Event, Msg) when Event::any(), Msg::any().
 publish(Event, Msg) -> publish(?DEFAULT_SCOPE, Event, Msg).
 
--spec publish(Scope::atom(), Event, Msg) -> {?ETag, Event, Msg} when Event::any(), Msg::any().
+-spec publish(Scope::atom(), Event, Msg) -> message(Event, Msg) when Event::any(), Msg::any().
 publish(Scope, Event, Msg) ->
-    M = {?ETag, Event, Msg},
+    M = message(Event, Msg),
     lists:foreach(fun(P) -> P ! M end, pg:get_members(Scope, {?ETag, Event})),
     M.
+
+-spec message(Event, Msg) -> message(Event, Msg) when Event::any(), Msg::any().
+message(Event, Msg) -> {etag(), Event, Msg}.
