@@ -5,6 +5,7 @@ erl_crash.dump
 # rebar 2.x
 /.rebar
 /ebin
+/doc
 /deps
 
 # rebar 3
