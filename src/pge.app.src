@@ -1,5 +1,5 @@
 {application, pge, [{description, "PG extended"},
-                    {vsn, "0.2.4"},
+                    {vsn, "0.2.5"},
                     {registered, []},
                     {applications, [stdlib, kernel]},
                     {modules, []},
