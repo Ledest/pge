@@ -35,14 +35,13 @@ doc/edoc-info: $(SOURCES)
 	$(ERL) -noshell -eval "edoc:application('.', [$(EDOC_OPTS)])." -s init stop
 
 $(EUNIT_MODULES): $(SOURCES) $(TEST_SOURCES) .eunit/
-	$(ERLC) -o .eunit $(ERLC_OPTS) $(ERLC_DEFS) -DTEST $(SOURCES)
-	$(ERLC) -o .eunit $(ERLC_OPTS) $(ERLC_DEFS) -DTEST $(TEST_SOURCES)
+	$(ERLC) -o .eunit $(ERLC_OPTS) $(ERLC_DEFS) -DTEST $(SOURCES) $(TEST_SOURCES)
 
 .eunit/:
 	mkdir .eunit
 
 eunit: $(EUNIT_MODULES)
-	$(ERL) -noshell -eval 'eunit:test({dir, ".eunit"}, [$(EUNIT_OPTS)]).' -s init stop
+	cd .eunit && $(ERL) -noshell -eval 'eunit:test($(NAME), [$(EUNIT_OPTS)]).' -s init stop
 
 clean:
 	rm -rf ebin doc .eunit
