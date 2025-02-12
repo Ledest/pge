@@ -24,7 +24,7 @@
 
 -export_type([cond_clause/0]).
 
--record(?ETag, {event :: any(), condition :: [cond_clause()]|cond_clause()|undefined}).
+-record(?ETag, {event :: any(), condition :: undefined|[cond_clause()]|cond_clause()|'$1'}).
 
 -spec start() -> {ok, pid()} | {error, any()}.
 start() -> start(?DEFAULT_SCOPE).
